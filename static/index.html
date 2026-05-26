@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>股票分析看板</title>
-<script src="https://cdn.bootcdn.net/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:#0d1117;color:#c9d1d9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
@@ -29,7 +28,7 @@ h1{font-size:22px;font-weight:700}.sub{color:#8b949e;font-size:12px;margin:4px 0
 .periods button.active{background:#1f6feb;border-color:#1f6feb;color:#fff}
 .chart-box{background:#161b22;border:1px solid #21262d;border-radius:8px;margin-bottom:12px}
 .chart-box .chart-title{font-size:12px;color:#8b949e;padding:10px 14px 0}
-#kline{width:100%;height:500px}#volume{width:100%;height:140px}
+#kline,#volume{width:100%}#kline{height:420px}#volume{height:120px}
 .metrics{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin:12px 0}
 .metric{background:#0d1117;border:1px solid #21262d;border-radius:8px;padding:10px}
 .metric .label{font-size:10px;color:#8b949e}.metric .value{font-size:17px;font-weight:700;margin-top:3px}.metric .hint{font-size:10px;margin-top:2px}
@@ -106,8 +105,34 @@ function backHome(){document.getElementById('home').classList.remove('hidden');d
 
 function renderMetrics(q,ind,n){const kl=ind.klines,last=kl[n-1],rsi=ind.rsi14?.[n-1],k=ind.kdj_k?.[n-1],d=ind.kdj_d?.[n-1],m5=ind.ma5?.[n-1],m20=ind.ma20?.[n-1];document.getElementById('metrics').innerHTML=[['开盘',fmt(q.open)],['最高',fmt(q.high)],['最低',fmt(q.low)],['昨收',fmt(q.pre_close)],['成交量',(q.volume/10000).toFixed(0)+'万'],['RSI(14)',rsi!=null?fmt(rsi,1):'—',rsi>70?'超买':rsi<30?'超卖':''],['KDJ-K',k!=null?fmt(k,1):'—'],['KDJ-D',d!=null?fmt(d,1):'—'],['MA5',m5!=null?fmt(m5,2):'—'],['MA20',m20!=null?fmt(m20,2):'—']].map(([l,v,t])=>'<div class="metric"><div class="label">'+l+'</div><div class="value">'+v+'</div>'+(t?'<div class="hint '+(t==='超买'?'red':'green')+'">'+t+'</div>':'')+'</div>').join('')}
 
-function renderChart(ind){const kl=ind.klines,n=kl.length,dates=kl.map(k=>k.date),o=kl.map(k=>k.open),h=kl.map(k=>k.high),l=kl.map(k=>k.low),c=kl.map(k=>k.close),v=kl.map(k=>k.volume);const kc=echarts.init(document.getElementById('kline'));kc.setOption({tooltip:{trigger:'axis',axisPointer:{type:'cross'}},grid:{left:'8%',right:'2%',top:10,bottom:30},xAxis:{type:'category',data:dates,axisLine:{lineStyle:{color:'#30363d'}},axisLabel:{color:'#8b949e',fontSize:10}},yAxis:{type:'value',scale:true,axisLine:{lineStyle:{color:'#30363d'}},axisLabel:{color:'#8b949e'},splitLine:{lineStyle:{color:'#21262d'}}},series:[{type:'candlestick',data:kl.map(k=>[k.open,k.close,k.low,k.high]),itemStyle:{color:'#f85149',color0:'#3fb950',borderColor:'#f85149',borderColor0:'#3fb950'}},{type:'line',data:ind.ma5,lineStyle:{color:'#d29922',width:1},symbol:'none'},{type:'line',data:ind.ma10,lineStyle:{color:'#58a6ff',width:1},symbol:'none'},{type:'line',data:ind.ma20,lineStyle:{color:'#bc8cff',width:1},symbol:'none'}]});const vc=echarts.init(document.getElementById('volume'));vc.setOption({grid:{left:'8%',right:'2%',top:5,bottom:20},xAxis:{type:'category',data:dates,axisLabel:{show:false},axisLine:{lineStyle:{color:'#30363d'}}},yAxis:{type:'value',axisLabel:{color:'#8b949e',fontSize:9},splitLine:{lineStyle:{color:'#21262d'}}},series:[{type:'bar',data:v.map((x,i)=>({value:x,itemStyle:{color:c[i]>=o[i]?'#f85149':'#3fb950'}}))}]});window.addEventListener('resize',()=>{kc.resize();vc.resize()});chartInst={dispose(){kc.dispose();vc.dispose()}};
-document.getElementById('klineTable').innerHTML='<div style="max-height:300px;overflow:auto;margin-top:12px"><table class="kline-table"><thead><tr><th>日期</th><th>开盘</th><th>最高</th><th>最低</th><th>收盘</th><th>成交量</th><th>涨跌</th></tr></thead><tbody>'+kl.slice(-30).reverse().map((k,i,a)=>{const prev=a[i+1],ch=prev?((k.close-prev.close)/prev.close*100):0;return'<tr><td>'+k.date+'</td><td>'+fmt(k.open)+'</td><td>'+fmt(k.high)+'</td><td>'+fmt(k.low)+'</td><td>'+fmt(k.close)+'</td><td>'+(k.volume/10000).toFixed(0)+'万</td><td class="'+cm(ch)+'">'+(ch?((ch>0?'+':'')+fmt(ch,2)+'%'):'—')+'</td></tr>'}).join('')+'</tbody></table></div>'}
+function renderChart(ind){const kl=ind.klines,n=kl.length;document.getElementById('klineTable').innerHTML='<div style="max-height:300px;overflow:auto;margin-top:12px"><table class="kline-table"><thead><tr><th>日期</th><th>开盘</th><th>最高</th><th>最低</th><th>收盘</th><th>成交量</th><th>涨跌</th></tr></thead><tbody>'+kl.slice(-30).reverse().map((k,i,a)=>{const prev=a[i+1],ch=prev?((k.close-prev.close)/prev.close*100):0;return'<tr><td>'+k.date+'</td><td>'+fmt(k.open)+'</td><td>'+fmt(k.high)+'</td><td>'+fmt(k.low)+'</td><td>'+fmt(k.close)+'</td><td>'+(k.volume/10000).toFixed(0)+'万</td><td class="'+cm(ch)+'">'+(ch?((ch>0?'+':'')+fmt(ch,2)+'%'):'—')+'</td></tr>'}).join('')+'</tbody></table></div>';
+// Canvas K-line
+setTimeout(()=>drawCanvas(ind),50)}
+
+function drawCanvas(ind){const kl=ind.klines,n=kl.length,W=document.getElementById('kline').clientWidth,H=420;if(W<100)return;
+const kc=document.getElementById('kline');kc.innerHTML='<canvas width='+(W*2)+' height='+(H*2)+' style=\"width:'+W+'px;height:'+H+'px\"></canvas>';
+const kv=kc.querySelector('canvas').getContext('2d');kv.scale(2,2);
+const vc=document.getElementById('volume');vc.innerHTML='<canvas width='+(W*2)+' height='+(240)+' style=\"width:'+W+'px;height:120px\"></canvas>';
+const vx=vc.querySelector('canvas').getContext('2d');vx.scale(2,2);
+const pad={top:10,bot:50,l:60,r:20},bodyW=W-pad.l-pad.r,bodyH=H-pad.top-pad.bot;
+let hi=-Infinity,lo=Infinity,mxv=0;for(let i=0;i<n;i++){if(kl[i].high>hi)hi=kl[i].high;if(kl[i].low<lo)lo=kl[i].low;if(kl[i].volume>mxv)mxv=kl[i].volume}
+const yr=bodyH/(hi-lo),xr=bodyW/(n-1),cw=Math.max(1,xr*0.6);
+// Grid
+kv.strokeStyle='#21262d';kv.lineWidth=0.5;for(let i=0;i<5;i++){const y=pad.top+bodyH*i/4;kv.beginPath();kv.moveTo(pad.l,y);kv.lineTo(W-pad.r,y);kv.stroke()}
+// Candles
+for(let i=0;i<n;i++){const k=kl[i],x=pad.l+i*xr,isRed=k.close>=k.open;kv.fillStyle=isRed?'#f85149':'#3fb950';kv.strokeStyle=isRed?'#f85149':'#3fb950';kv.lineWidth=1;
+kv.fillRect(x-cw/2,pad.top+(hi-Math.max(k.open,k.close))*yr,cw,Math.abs(k.close-k.open)*yr||1);
+kv.beginPath();kv.moveTo(x,pad.top+(hi-k.high)*yr);kv.lineTo(x,pad.top+(hi-k.low)*yr);kv.stroke()}
+// MAs
+[[ind.ma5,'#d29922'],[ind.ma10,'#58a6ff'],[ind.ma20,'#bc8cff']].forEach(([ma,c])=>{kv.strokeStyle=c;kv.lineWidth=1;kv.beginPath();let started=false;for(let i=0;i<n;i++){if(ma[i]!=null){const y=pad.top+(hi-ma[i])*yr,x=pad.l+i*xr;started?kv.lineTo(x,y):kv.moveTo(x,y);started=true}}kv.stroke()});
+// Axis labels
+kv.fillStyle='#8b949e';kv.font='9px sans-serif';
+for(let i=0;i<5;i++){const v=hi-(hi-lo)*i/4;kv.fillText(v.toFixed(v>10?0:2),2,pad.top+bodyH*i/4+4)}
+for(let i=0;i<kl.length;i+=Math.max(1,Math.floor(n/6)))kv.fillText(kl[i].date.slice(5),pad.l+i*xr-20,W-10)
+// Volume
+const vH=100,vpad={l:60,r:20},vW=W-vpad.l-vpad.r,vr=vH/mxv;vx.fillStyle='#21262d';vx.fillRect(0,0,W,120);
+for(let i=0;i<n;i++){const x=pad.l+i*xr,h=kl[i].volume*vr;vx.fillStyle=kl[i].close>=kl[i].open?'rgba(248,81,73,.5)':'rgba(63,185,80,.5)';vx.fillRect(x-cw/2,vH-h,Math.max(1,cw),h)}
+vx.fillStyle='#8b949e';vx.font='9px sans-serif';vx.fillText('VOL',2,12);chartInst=null}
 
 async function chPeriod(code,days,btn){document.querySelectorAll('.periods button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');const ind=await api('/v1/indicators/'+code+'?days='+days);if(chartInst){chartInst.dispose();chartInst=null}document.getElementById('kline').innerHTML='';document.getElementById('volume').innerHTML='';renderChart(ind)}
 </script>
