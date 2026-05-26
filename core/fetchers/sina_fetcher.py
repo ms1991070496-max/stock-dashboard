@@ -69,6 +69,8 @@ class SinaFetcher(BaseFetcher):
         try:
             body = raw.split('"')[1] if '"' in raw else raw
             parts = body.split(',')
+            if len(parts) < 9:
+                raise TemporaryError(f"Sina short response for {code}: {len(parts)} fields")
 
             if mkt == 'cn':
                 return {
