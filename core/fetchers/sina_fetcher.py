@@ -79,12 +79,6 @@ def _fetch_sina(symbol: str) -> str | None:
     if symbol in _cache:
         return _cache[symbol][1]
     return None
-    except Exception as e:
-        logger.warning(f"Sina fetch failed for {symbol}: {e}")
-        # Return cached stale data if available
-        if symbol in _cache:
-            return _cache[symbol][1]
-        return None
 
 
 def _detect_mkt(symbol: str) -> str:
