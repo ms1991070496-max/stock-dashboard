@@ -94,7 +94,7 @@ async function loadSnapshot(){
   for(let i=0;i<DEFAULT.length;i++){
     const code=DEFAULT[i];
     try{
-      const q=await api('/v1/stocks/'+code+'/quote');
+      const q=await api('/v1/stocks/'+code+'/quote?fast=true');
       const c=q.change_pct||0,color=c>0?'red':c<0?'green':'';
       const m=code.match(/^\d{6}$/)?'cn':/^\d{4,5}$/.test(code)?'hk':'us';
       el.innerHTML+=`<div class="card" onclick="viewStock('${code}')">

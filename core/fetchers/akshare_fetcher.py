@@ -43,7 +43,7 @@ class AkShareFetcher(BaseFetcher):
         except Exception as e:
             raise TemporaryError(f"AkShare K-line failed for {code}: {e}")
 
-    @retry(max_attempts=2, base_delay=1.0)
+    @retry(max_attempts=1, base_delay=0.5)
     async def fetch_realtime(self, code: str) -> dict:
         try:
             import akshare as ak

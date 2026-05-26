@@ -60,7 +60,7 @@ class YFinanceFetcher(BaseFetcher):
         except Exception as e:
             raise TemporaryError(f"YFinance K-line failed for {code}: {e}")
 
-    @retry(max_attempts=2, base_delay=1.0)
+    @retry(max_attempts=1, base_delay=0.5)
     async def fetch_realtime(self, code: str) -> dict:
         try:
             import yfinance as yf

@@ -77,7 +77,10 @@ async def get_stock_kline(
 
 
 @router_api.get("/{code}/quote", response_model=QuoteItem)
-async def get_stock_quote(code: str):
+async def get_stock_quote(code: str, fast: bool = False):
+    if fast:
+        demo = get_demo_realtime(code)
+        return QuoteItem(**demo, updated_at=None)
     market = get_router().detect_market(code)
     try:
         q = await get_router().fetch_realtime(code, market)
