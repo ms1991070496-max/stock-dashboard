@@ -12,7 +12,7 @@ COPY start.sh .
 
 RUN pip install --no-cache-dir -e . && chmod +x start.sh
 
-ENV DATABASE_URL=sqlite:///app/data/stock.db
+ENV DATABASE_URL=sqlite:////app/data/stock.db
 
 EXPOSE 8000
 
