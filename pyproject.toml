@@ -1,0 +1,45 @@
+[project]
+name = "stock-dashboard"
+version = "0.1.0"
+description = "Multi-market stock analysis dashboard"
+requires-python = ">=3.12"
+dependencies = [
+    "streamlit>=1.40",
+    "pandas>=2.2",
+    "numpy",
+    "plotly>=5.24",
+    "sqlalchemy>=2.0",
+    "diskcache>=5.6",
+    "pydantic>=2.10",
+    "pydantic-settings>=2.7",
+    "httpx>=0.28",
+    "apscheduler>=3.10",
+    "akshare>=1.16",
+    "yfinance>=0.2.50",
+    "vader-sentiment>=3.2",
+    "pytz>=2024.2",
+    "mplfinance>=0.12",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.34",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.25",
+    "ruff>=0.9",
+]
+
+[tool.setuptools.packages.find]
+include = ["core*", "app_phase1*", "api*"]
+
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W"]

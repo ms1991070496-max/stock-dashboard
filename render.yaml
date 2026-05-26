@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: stock-dashboard-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: DATABASE_URL
+        value: sqlite:///data/stock.db
+      - key: LOG_LEVEL
+        value: INFO

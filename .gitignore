@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+data/
+*.db
+.DS_Store
+.streamlit/
+*.egg-info/
+dist/
+.pytest_cache/
+.ruff_cache/
+node_modules/
+.next/
+.vercel/
