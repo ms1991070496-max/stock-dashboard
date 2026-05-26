@@ -1,4 +1,4 @@
-const BASE = "";
+const BASE = "https://stock-dashboard.ji6q.onrender.com";
 
 async function fetchJson<T>(path: string): Promise<T> {
   const res = await fetch(`${BASE}${path}`);
