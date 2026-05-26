@@ -5,13 +5,13 @@ from typing import Optional
 import pandas as pd
 
 from core.fetchers.base import BaseFetcher
-from core.fetchers.sina_fetcher import SinaFetcher
+from core.fetchers.tencent_fetcher import TencentFetcher
 
 logger = logging.getLogger(__name__)
 
 def _make_chain() -> dict[str, list[BaseFetcher]]:
-    sina = SinaFetcher()
-    chain = {"cn": [sina], "us": [sina], "hk": [sina]}
+    tx = TencentFetcher()
+    chain = {"cn": [tx], "us": [tx], "hk": [tx]}
     try:
         from core.fetchers.akshare_fetcher import AkShareFetcher
         chain["cn"].append(AkShareFetcher())
