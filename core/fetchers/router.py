@@ -5,16 +5,25 @@ from typing import Optional
 import pandas as pd
 
 from core.fetchers.base import BaseFetcher
-from core.fetchers.akshare_fetcher import AkShareFetcher
-from core.fetchers.yfinance_fetcher import YFinanceFetcher
+from core.fetchers.sina_fetcher import SinaFetcher
 
 logger = logging.getLogger(__name__)
 
-FETCHER_CHAIN: dict[str, list[BaseFetcher]] = {
-    "cn": [AkShareFetcher()],
-    "us": [YFinanceFetcher()],
-    "hk": [YFinanceFetcher(), AkShareFetcher()],
-}
+def _make_chain() -> dict[str, list[BaseFetcher]]:
+    sina = SinaFetcher()
+    chain = {"cn": [sina], "us": [sina], "hk": [sina]}
+    try:
+        from core.fetchers.akshare_fetcher import AkShareFetcher
+        chain["cn"].append(AkShareFetcher())
+    except ImportError: pass
+    try:
+        from core.fetchers.yfinance_fetcher import YFinanceFetcher
+        chain["us"].append(YFinanceFetcher())
+        chain["hk"].append(YFinanceFetcher())
+    except ImportError: pass
+    return chain
+
+FETCHER_CHAIN = _make_chain()
 
 
 class FetcherRouter:

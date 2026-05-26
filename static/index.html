@@ -130,7 +130,7 @@ async function loadSnap(){
   const el=document.getElementById('snapshot'),st=document.getElementById('snapStatus');
   el.innerHTML='';let n=0;
   for(const code of DEF){
-    try{const q=await api('/v1/stocks/'+code+'/quote?fast=true');
+    try{const q=await api('/v1/stocks/'+code+'/quote');
       const m=code.match(/^\d{6}$/)?'cn':/^\d{4,5}$/.test(code)?'hk':'us';
       const c=q.change_pct||0,cl=cm(c);
       el.innerHTML+=`<div class="card" onclick="view('${code}')"><div class="flag">${MK[m].flag} ${q.name||code}</div><div class="price">${MK[m].cur}${fmt(q.price)}</div><div class="change ${cl}">${c>0?'+':''}${fmt(c,2)}%</div></div>`;
