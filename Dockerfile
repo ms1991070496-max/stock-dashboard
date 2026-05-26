@@ -2,19 +2,24 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-COPY pyproject.toml .
-RUN pip install --no-cache-dir pip setuptools --upgrade \
-    && pip install --no-cache-dir fastapi uvicorn pydantic pydantic-settings \
-       sqlalchemy pandas numpy httpx diskcache yfinance vader-sentiment
+RUN pip install --no-cache-dir fastapi uvicorn
 
-COPY core/ ./core/
 COPY api/ ./api/
+COPY core/ ./core/
 
 ENV PYTHONPATH=/app
-ENV DATABASE_URL=sqlite:///:memory:
 
-RUN python -c "from api.main import app; print('Routes:', [r.path for r in app.routes])"
+# Test: simple app first
+RUN python -c "
+from fastapi import FastAPI
+app = FastAPI()
+@app.get('/api/health')
+def h(): return {'ok': True}
+print('OK routes:', [r.path for r in app.routes])
+"
 
-EXPOSE 10000
+# Test: our app
+RUN pip install --no-cache-dir pydantic pydantic-settings sqlalchemy pandas numpy httpx \
+    && python -c "from api.main import app; print('OUR routes:', [r.path for r in app.routes])"
 
 CMD uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-8000}
