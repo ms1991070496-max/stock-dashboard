@@ -2,6 +2,7 @@
 
 import logging
 import re
+import time
 import urllib.request
 from datetime import date, datetime
 
@@ -10,6 +11,12 @@ import pandas as pd
 from core.fetchers.base import BaseFetcher, TemporaryError
 
 logger = logging.getLogger(__name__)
+
+# ── Rate-limit + cache ────────────────────────────────
+_cache: dict[str, tuple[float, str]] = {}
+_CACHE_TTL = 30  # seconds
+_LAST_CALL = 0.0
+_MIN_INTERVAL = 0.3  # seconds between Sina calls
 
 # ── Sina symbol mapping ──────────────────────────────
 def _to_sina(code: str) -> str:
@@ -35,16 +42,42 @@ def _to_sina(code: str) -> str:
 
 
 def _fetch_sina(symbol: str) -> str | None:
-    """Fetch raw Sina quote line."""
+    """Fetch raw Sina quote line with rate limiting and cache."""
+    global _LAST_CALL
+    now = time.time()
+
+    # Check cache
+    if symbol in _cache:
+        ts, val = _cache[symbol]
+        if now - ts < _CACHE_TTL:
+            return val
+
+    # Rate limit
+    elapsed = now - _LAST_CALL
+    if elapsed < _MIN_INTERVAL:
+        time.sleep(_MIN_INTERVAL - elapsed)
+    _LAST_CALL = time.time()
+
     try:
         req = urllib.request.Request(
             f'https://hq.sinajs.cn/list={symbol}',
             headers={'Referer': 'https://finance.sina.com.cn'}
         )
         resp = urllib.request.urlopen(req, timeout=8)
-        return resp.read().decode('gbk')
+        raw = resp.read().decode('gbk')
+        # Retry once if empty
+        if raw and raw.endswith('"");') and len(raw) < 50:
+            time.sleep(0.8)
+            resp = urllib.request.urlopen(req, timeout=8)
+            raw = resp.read().decode('gbk')
+        if raw:
+            _cache[symbol] = (time.time(), raw)
+        return raw
     except Exception as e:
         logger.warning(f"Sina fetch failed for {symbol}: {e}")
+        # Return cached stale data if available
+        if symbol in _cache:
+            return _cache[symbol][1]
         return None
 
 
