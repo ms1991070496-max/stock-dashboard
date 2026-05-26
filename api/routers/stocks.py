@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+import time
 from datetime import date, timedelta
 
 from fastapi import APIRouter, HTTPException, Query
@@ -9,6 +10,7 @@ from fastapi import APIRouter, HTTPException, Query
 from core.cache.manager import get_cache
 from core.config import settings
 from core.fetchers.demo_data import (
+    DEMO_STOCKS,
     get_demo_info,
     get_demo_kline,
     get_demo_realtime,
@@ -19,6 +21,28 @@ from core.schemas import KLineItem, QuoteItem, StockInfo
 
 logger = logging.getLogger(__name__)
 router_api = APIRouter(prefix="/api/v1/stocks", tags=["stocks"])
+
+
+@router_api.get("/batch")
+async def batch_quote(codes: str = "", fast: bool = True):
+    """Return multiple quotes in one request. ?codes=600519,AAPL,1810&fast=true"""
+    code_list = [c.strip() for c in codes.split(",") if c.strip()]
+    if not code_list:
+        return {}
+    results = {}
+    if fast:
+        for code in code_list:
+            results[code] = get_demo_realtime(code)
+    else:
+        for code in code_list:
+            market = get_router().detect_market(code)
+            try:
+                q = await get_router().fetch_realtime(code, market)
+                results[code] = q
+                time.sleep(0.3)  # Rate limit for Sina
+            except Exception:
+                results[code] = get_demo_realtime(code)
+    return results
 
 
 @router_api.get("/search", response_model=list[StockInfo])

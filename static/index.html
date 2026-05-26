@@ -79,17 +79,20 @@ function fmt(n,d=2){return Number(n).toFixed(d)}
 function cm(c){return c>0?'red':c<0?'green':''}
 
 // ════ Fast demo load, then real data ════
-(async function(){await loadAll('fast=true');setTimeout(()=>loadAll(''),500)})();
+(async function(){await loadAll(true);setTimeout(()=>loadAll(false),1000)})();
 
-async function loadAll(qs){
+async function loadAll(fast){
   const el=document.getElementById('snapshot'),st=document.getElementById('snapStatus'),cards=document.querySelectorAll('.idx-card');
   const idxNames=Object.keys(INDEX_CODES);
-  const all=[...idxNames.map(n=>INDEX_CODES[n]),...DEF];
-  const tasks=all.map(c=>api('/v1/stocks/'+c+'/quote?'+qs).catch(()=>null));
-  const results=await Promise.all(tasks);
-  for(let i=0;i<idxNames.length;i++){const d=results[i];if(d){const c=d.change_pct||0;cards[i].innerHTML='<div class="idx-name">'+idxNames[i]+'</div><div class="idx-price">'+fmt(d.price,2)+'</div><div class="idx-change '+cm(c)+'">'+(c>0?'+':'')+fmt(c,2)+'%</div>'}}
-  el.innerHTML='';let n=0;for(let i=0;i<DEF.length;i++){const q=results[idxNames.length+i],code=DEF[i];if(q){const m=code.match(/^\\d{6}$/)?'cn':/^\\d{4,5}$/.test(code)?'hk':'us',c=q.change_pct||0;el.innerHTML+='<div class="card" onclick="view(\\''+code+'\\')"><div class="flag">'+MK[m].flag+' '+q.name+'</div><div class="price">'+MK[m].cur+fmt(q.price)+'</div><div class="change '+cm(c)+'">'+(c>0?'+':'')+fmt(c,2)+'%</div></div>';n++}else el.innerHTML+='<div class="card" style="opacity:.3"><div class="name">'+code+'</div><div class="price">—</div></div>'}
-  st.textContent=qs?'加载中... ('+n+'/'+DEF.length+')':'('+n+'/'+DEF.length+')';
+  const allCodes=[...idxNames.map(n=>INDEX_CODES[n]),...DEF].join(',');
+  // Single batch request
+  const data=await api('/v1/stocks/batch?codes='+encodeURIComponent(allCodes)+'&fast='+fast).catch(()=>({}));
+  // Indices
+  for(let i=0;i<idxNames.length;i++){const d=data[INDEX_CODES[idxNames[i]]];if(d){const c=d.change_pct||0;cards[i].innerHTML='<div class="idx-name">'+idxNames[i]+'</div><div class="idx-price">'+fmt(d.price,2)+'</div><div class="idx-change '+cm(c)+'">'+(c>0?'+':'')+fmt(c,2)+'%</div>'}}
+  // Snapshot
+  el.innerHTML='';let n=0;
+  for(const code of DEF){const q=data[code];if(q){const m=code.match(/^\\d{6}$/)?'cn':/^\\d{4,5}$/.test(code)?'hk':'us',c=q.change_pct||0;el.innerHTML+='<div class="card" onclick="view(\\''+code+'\\')"><div class="flag">'+MK[m].flag+' '+q.name+'</div><div class="price">'+MK[m].cur+fmt(q.price)+'</div><div class="change '+cm(c)+'">'+(c>0?'+':'')+fmt(c,2)+'%</div></div>';n++}else el.innerHTML+='<div class="card" style="opacity:.3"><div class="name">'+code+'</div><div class="price">—</div></div>'}
+  st.textContent='('+n+'/'+DEF.length+')';
 }
 
 async function doSearch(){const q=document.getElementById('searchInput').value.trim();if(!q)return;const data=await api('/v1/stocks/search?q='+encodeURIComponent(q));document.getElementById('results').innerHTML=data.map(s=>{const m=s.market,c=s.change_pct||0;return'<div class="card" onclick="view(\\''+s.code+'\\')"><div class="flag">'+(MK[m]?.flag||'')+' '+s.name+'</div><div class="price">'+(MK[m]?.cur||'')+fmt(s.price)+'</div><div class="change '+cm(c)+'">'+(c>0?'+':'')+fmt(c,2)+'%</div></div>'}).join('')||'<p style="color:#8b949e;padding:20px">未找到匹配股票</p>'}
