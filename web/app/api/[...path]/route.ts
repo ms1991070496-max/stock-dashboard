@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const BACKEND = "https://stock-dashboard-jj6q.onrender.com";
+const BACKEND = "https://stock-dashboard-romb.onrender.com";
 
 export async function GET(req: NextRequest) {
   const url = `${BACKEND}${req.nextUrl.pathname}${req.nextUrl.search}`;
