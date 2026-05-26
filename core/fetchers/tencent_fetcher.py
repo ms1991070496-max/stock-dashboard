@@ -40,16 +40,7 @@ def _detect_mkt(sym: str) -> str:
 
 
 def _fetch_tx(symbol: str) -> str | None:
-    global _LAST_CALL
-    now = time.time()
-    if symbol in _cache:
-        ts, val = _cache[symbol]
-        if now - ts < _CACHE_TTL:
-            return val
-    elapsed = now - _LAST_CALL
-    if elapsed < _MIN_INTERVAL:
-        time.sleep(_MIN_INTERVAL - elapsed)
-    _LAST_CALL = time.time()
+    """Simple fetch — no cache complexity."""
     try:
         req = urllib.request.Request(
             f'https://qt.gtimg.cn/q={symbol}',
@@ -58,12 +49,9 @@ def _fetch_tx(symbol: str) -> str | None:
         resp = urllib.request.urlopen(req, timeout=8)
         raw = resp.read().decode('gbk', errors='replace')
         if raw and len(raw) > 50:
-            _cache[symbol] = (time.time(), raw)
             return raw
     except Exception as e:
         logger.warning(f"Tencent fetch failed for {symbol}: {e}")
-    if symbol in _cache:
-        return _cache[symbol][1]
     return None
 
 
