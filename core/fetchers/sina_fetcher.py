@@ -58,21 +58,27 @@ def _fetch_sina(symbol: str) -> str | None:
         time.sleep(_MIN_INTERVAL - elapsed)
     _LAST_CALL = time.time()
 
-    try:
-        req = urllib.request.Request(
-            f'https://hq.sinajs.cn/list={symbol}',
-            headers={'Referer': 'https://finance.sina.com.cn'}
-        )
-        resp = urllib.request.urlopen(req, timeout=8)
-        raw = resp.read().decode('gbk')
-        # Retry once if empty
-        if raw and raw.endswith('"");') and len(raw) < 50:
-            time.sleep(0.8)
+    for attempt in range(3):
+        try:
+            req = urllib.request.Request(
+                f'https://hq.sinajs.cn/list={symbol}',
+                headers={'Referer': 'https://finance.sina.com.cn'}
+            )
             resp = urllib.request.urlopen(req, timeout=8)
             raw = resp.read().decode('gbk')
-        if raw:
-            _cache[symbol] = (time.time(), raw)
-        return raw
+            # Check if data is valid (not empty "")
+            if raw and '"");' not in raw:
+                _cache[symbol] = (time.time(), raw)
+                return raw
+            time.sleep(0.5 * (attempt + 1))
+        except Exception as e:
+            if attempt == 2:
+                logger.warning(f"Sina fetch failed for {symbol}: {e}")
+            time.sleep(0.5)
+    # Return cached stale data if available
+    if symbol in _cache:
+        return _cache[symbol][1]
+    return None
     except Exception as e:
         logger.warning(f"Sina fetch failed for {symbol}: {e}")
         # Return cached stale data if available
