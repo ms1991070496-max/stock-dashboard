@@ -6,12 +6,8 @@ from fastapi import FastAPI
 
 from api.middleware.cors import setup_cors
 from api.routers import stocks, indicators, screener, news
-from core.database import init_db
-
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-init_db()
 
 app = FastAPI(
     title="Stock Analysis Dashboard API",
@@ -29,6 +25,16 @@ app.include_router(screener.router_api)
 app.include_router(news.router_api)
 
 
+@app.on_event("startup")
+async def startup():
+    try:
+        from core.database import init_db
+        init_db()
+        logger.info("Database initialized")
+    except Exception as e:
+        logger.warning(f"DB init skipped (non-fatal): {e}")
+
+
 @app.get("/api/health")
 async def health():
-    return {"status": "ok", "version": "0.2.0"}
+    return {"status": "ok", "version": "0.3.0"}

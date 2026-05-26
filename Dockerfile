@@ -7,13 +7,11 @@ RUN pip install --no-cache-dir pip setuptools --upgrade
 COPY pyproject.toml .
 COPY core/ ./core/
 COPY api/ ./api/
-COPY scripts/ ./scripts/
-COPY start.sh .
 
-RUN pip install --no-cache-dir -e . && chmod +x start.sh
+RUN pip install --no-cache-dir -e .
 
-ENV DATABASE_URL=sqlite:////app/data/stock.db
+ENV DATABASE_URL=sqlite:///:memory:
 
 EXPOSE 8000
 
-CMD ["./start.sh"]
+CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
