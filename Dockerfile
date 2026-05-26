@@ -2,15 +2,18 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-RUN pip install --no-cache-dir pip setuptools --upgrade
-
 COPY pyproject.toml .
+RUN pip install --no-cache-dir pip setuptools --upgrade \
+    && pip install --no-cache-dir fastapi uvicorn pydantic pydantic-settings \
+       sqlalchemy pandas numpy httpx diskcache yfinance vader-sentiment
+
 COPY core/ ./core/
 COPY api/ ./api/
 
-RUN pip install --no-cache-dir -e .
-
+ENV PYTHONPATH=/app
 ENV DATABASE_URL=sqlite:///:memory:
+
+RUN python -c "from api.main import app; print('Routes:', [r.path for r in app.routes])"
 
 EXPOSE 8000
 
