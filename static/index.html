@@ -59,13 +59,13 @@ async function init(){
   document.getElementById('idxBar').innerHTML=bar;
   // Batch load all data
   var codes=[];for(var k in IDX)codes.push(IDX[k]);codes=codes.concat(DEF);
-  var data=await A('/v1/stocks/batch?codes='+encodeURIComponent(codes.join(','))+'&fast=true');
+  // Try real data first, fall back to demo
+  try{
+    var data=await A('/v1/stocks/batch?codes='+encodeURIComponent(codes.join(','))+'&fast=false');
+  }catch(e){
+    data=await A('/v1/stocks/batch?codes='+encodeURIComponent(codes.join(','))+'&fast=true');
+  }
   renderAll(data);
-  // Then real data
-  setTimeout(async function(){
-    try{var real=await A('/v1/stocks/batch?codes='+encodeURIComponent(codes.join(','))+'&fast=false');renderAll(real)}
-    catch(e){}
-  },500);
 }
 
 function renderAll(data){
