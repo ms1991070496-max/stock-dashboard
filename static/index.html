@@ -95,15 +95,54 @@ async function V(code){
     var metrics=[['开盘',F(quote.open)],['昨收',F(quote.pre_close)],['最高',F(quote.high)],['最低',F(quote.low)],['成交量',(quote.volume/10000).toFixed(0)+'万'],['RSI(14)',rsi!=null?F(rsi,1):'—',rsi>70?'超买':rsi<30?'超卖':''],['KDJ-K',kv!=null?F(kv,1):'—'],['KDJ-D',dv!=null?F(dv,1):'—']];
     for(var i=0;i<metrics.length;i++){var mt=metrics[i];html+='<div class="metric"><div class="lbl">'+mt[0]+'</div><div class="val">'+mt[1]+'</div>'+(mt[2]?'<div class="lbl '+(mt[2]==='超买'?'red':'green')+'">'+mt[2]+'</div>':'')+'</div>'}
     html+='</div></div>';
+    html+='<div class="chart-box"><div class="chart-title" style="font-size:12px;color:#8b949e;padding:8px 14px 0">K线图</div><canvas id="klineCanvas" style="width:100%;height:380px"></canvas></div>';
+    html+='<div class="chart-box"><div class="chart-title" style="font-size:12px;color:#8b949e;padding:8px 14px 0">成交量</div><canvas id="volCanvas" style="width:100%;height:100px"></canvas></div>';
     // Real K-line table from Tencent
     html+='<div style="max-height:350px;overflow:auto"><table><thead><tr><th>日期</th><th>开盘</th><th>最高</th><th>最低</th><th>收盘</th><th>成交量</th><th>涨跌</th></tr></thead><tbody>';
     for(var i=n-1;i>=Math.max(0,n-30);i--){var k=kl[i],prev=i>0?kl[i-1]:null,ch=prev?((k.close-prev.close)/prev.close*100):0;html+='<tr><td>'+k.date+'</td><td>'+F(k.open)+'</td><td>'+F(k.high)+'</td><td>'+F(k.low)+'</td><td>'+F(k.close)+'</td><td>'+(k.volume/10000).toFixed(0)+'万</td><td class="'+C(ch)+'">'+(ch?((ch>0?'+':'')+F(ch,2)+'%'):'—')+'</td></tr>'}
     html+='</tbody></table></div>';
     document.getElementById('detail').innerHTML=html;
+    setTimeout(function(){drawCanvas(kl)},100);
   }catch(e){document.getElementById('detail').innerHTML='<button class="back-btn" onclick="B()">← 返回</button><p style="color:#8b949e;text-align:center;padding:60px">加载失败</p>'}
 }
 
 function B(){document.getElementById('home').classList.remove('hidden');document.getElementById('detail').classList.add('hidden')}
+
+function drawCanvas(kl){
+  var W=document.getElementById('klineCanvas').parentElement.clientWidth-30;
+  // K-line
+  var kc=document.getElementById('klineCanvas'),ctx=kc.getContext('2d');
+  var dpr=window.devicePixelRatio||1;kc.width=W*dpr;kc.height=380*dpr;kc.style.width=W+'px';kc.style.height='380px';ctx.scale(dpr,dpr);
+  var n=kl.length,pad={t:15,b:40,l:60,r:15},bw=W-pad.l-pad.r,bh=380-pad.t-pad.b;
+  var hi=-Infinity,lo=Infinity;for(var i=0;i<n;i++){if(kl[i].high>hi)hi=kl[i].high;if(kl[i].low<lo)lo=kl[i].low}
+  var yr=bh/(hi-lo),xr=bw/(n-1),cw=Math.max(1,xr*0.65);
+  // Grid
+  ctx.strokeStyle='#21262d';ctx.lineWidth=0.5;
+  for(var i=0;i<5;i++){var y=pad.t+bh*i/4;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke()}
+  // Candles
+  for(var i=0;i<n;i++){var k=kl[i],x=pad.l+i*xr,isRed=k.close>=k.open;
+    ctx.fillStyle=isRed?'#f85149':'#3fb950';ctx.strokeStyle=isRed?'#f85149':'#3fb950';ctx.lineWidth=1;
+    ctx.fillRect(x-cw/2,pad.t+(hi-Math.max(k.open,k.close))*yr,cw,Math.abs(k.close-k.open)*yr||1);
+    ctx.beginPath();ctx.moveTo(x,pad.t+(hi-k.high)*yr);ctx.lineTo(x,pad.t+(hi-k.low)*yr);ctx.stroke()}
+  // MA5 line (simple approximation from closes)
+  ctx.strokeStyle='#d29922';ctx.lineWidth=1;ctx.beginPath();var started=false;
+  for(var i=4;i<n;i++){var sum=0;for(var j=i-4;j<=i;j++)sum+=kl[j].close;var ma=sum/5;var x=pad.l+i*xr,y=pad.t+(hi-ma)*yr;started?ctx.lineTo(x,y):ctx.moveTo(x,y);started=true}ctx.stroke();
+  // MA20
+  ctx.strokeStyle='#bc8cff';ctx.beginPath();started=false;
+  for(var i=19;i<n;i++){var sum=0;for(var j=i-19;j<=i;j++)sum+=kl[j].close;var ma=sum/20;var x=pad.l+i*xr,y=pad.t+(hi-ma)*yr;started?ctx.lineTo(x,y):ctx.moveTo(x,y);started=true}ctx.stroke();
+  // Labels
+  ctx.fillStyle='#8b949e';ctx.font='9px sans-serif';
+  for(var i=0;i<5;i++){var v=hi-(hi-lo)*i/4;ctx.fillText(v.toFixed(v>10?0:2),2,pad.t+bh*i/4+4)}
+  for(var i=0;i<n;i+=Math.max(1,Math.floor(n/6)))ctx.fillText(kl[i].date.slice(5),pad.l+i*xr-22,W-8);
+
+  // Volume
+  var vc=document.getElementById('volCanvas'),vctx=vc.getContext('2d');
+  vc.width=W*dpr;vc.height=100*dpr;vc.style.width=W+'px';vc.style.height='100px';vctx.scale(dpr,dpr);
+  var mx=0;for(var i=0;i<n;i++)if(kl[i].volume>mx)mx=kl[i].volume;
+  var vr=90/mx;vctx.fillStyle='#0d1117';vctx.fillRect(pad.l,0,W-pad.l-pad.r,100);
+  for(var i=0;i<n;i++){var x=pad.l+i*xr,h=kl[i].volume*vr;vctx.fillStyle=kl[i].close>=kl[i].open?'rgba(248,81,73,.4)':'rgba(63,185,80,.4)';vctx.fillRect(x-cw/2,100-h,Math.max(1,cw),h)}
+}
+
 init();
 </script>
 </body>
