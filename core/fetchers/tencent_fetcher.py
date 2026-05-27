@@ -25,7 +25,7 @@ def _to_tx(code: str) -> str:
     if code.endswith('.HK'):
         return f'hk{code[:-3]}'
     if re.match(r'^\d{4,5}$', code):
-        return f'hk{code}'
+        return f'hk{int(code):05d}'
     if code.startswith('SH'): return f'sh{code[2:]}'
     if code.startswith('SZ'): return f'sz{code[2:]}'
     if code.isdigit() and len(code) == 6:
@@ -55,53 +55,38 @@ def _fetch_tx(symbol: str) -> str | None:
     return None
 
 
+def _tx_fetch(code: str) -> dict:
+    """Synchronous fetch — called from async wrapper."""
+    import subprocess
+    sym = _to_tx(code)
+    r = subprocess.run(['curl', '-s', '-H', 'User-Agent: Mozilla/5.0',
+        f'https://qt.gtimg.cn/q={sym}'], capture_output=True, timeout=8)
+    raw = r.stdout.decode('gbk', errors='replace')
+    if not raw or len(raw) < 50:
+        raise TemporaryError(f'Tencent no data for {code}')
+    body = raw.split('"')[1] if '"' in raw else raw
+    parts = body.split('~')
+    mkt = _detect_mkt(sym)
+    if mkt == 'cn':
+        return {'code': code, 'name': parts[1], 'price': float(parts[3]), 'pre_close': float(parts[4]),
+                'open': float(parts[5]), 'high': float(parts[33]), 'low': float(parts[34]),
+                'change_pct': round((float(parts[3])-float(parts[4]))/float(parts[4])*100,2), 'volume': int(float(parts[6]))}
+    elif mkt == 'hk':
+        return {'code': code, 'name': parts[1], 'price': float(parts[3]), 'pre_close': float(parts[4]),
+                'open': float(parts[5]), 'high': float(parts[33]), 'low': float(parts[34]),
+                'change_pct': float(parts[32]), 'volume': int(float(parts[6]))}
+    else:
+        return {'code': code, 'name': parts[1] if parts[1] else code, 'price': float(parts[3]), 'pre_close': float(parts[4]),
+                'open': float(parts[5]), 'high': float(parts[33]), 'low': float(parts[34]),
+                'change_pct': round((float(parts[3])-float(parts[4]))/float(parts[4])*100,2), 'volume': int(float(parts[6]))}
+
+
 class TencentFetcher(BaseFetcher):
     market = "all"
     name = "tencent"
 
     async def fetch_realtime(self, code: str) -> dict:
-        sym = _to_tx(code)
-        # Use curl subprocess — 100% reliable
-        import subprocess
-        try:
-            r = subprocess.run(['curl', '-s', '-H', 'User-Agent: Mozilla/5.0',
-                f'https://qt.gtimg.cn/q={sym}'], capture_output=True, timeout=8)
-            raw = r.stdout.decode('gbk', errors='replace')
-        except Exception as e:
-            raise TemporaryError(f"Tencent fetch failed for {code}: {e}")
-        if not raw or len(raw) < 50:
-            raise TemporaryError(f"Tencent no data for {code}")
-        try:
-            body = raw.split('"')[1] if '"' in raw else raw
-            parts = body.split('~')
-            mkt = _detect_mkt(sym)
-
-            if mkt == 'cn':
-                return {
-                    'code': code, 'name': parts[1],
-                    'price': float(parts[3]), 'pre_close': float(parts[4]),
-                    'open': float(parts[5]), 'high': float(parts[33]), 'low': float(parts[34]),
-                    'change_pct': round((float(parts[3]) - float(parts[4])) / float(parts[4]) * 100, 2),
-                    'volume': int(float(parts[6])),
-                }
-            elif mkt == 'hk':
-                return {
-                    'code': code, 'name': parts[1],
-                    'price': float(parts[3]), 'pre_close': float(parts[4]),
-                    'open': float(parts[5]), 'high': float(parts[33]), 'low': float(parts[34]),
-                    'change_pct': float(parts[32]),
-                    'volume': int(float(parts[6])),
-                }
-            else:  # US
-                return {
-                    'code': code, 'name': parts[1] if parts[1] else code,
-                    'price': float(parts[3]), 'pre_close': float(parts[4]),
-                    'open': float(parts[5]), 'high': float(parts[33]), 'low': float(parts[34]),
-                    'change_pct': round((float(parts[3]) - float(parts[4])) / float(parts[4]) * 100, 2),
-                    'volume': int(float(parts[6])),
-                }
-        except (IndexError, ValueError) as e:
-            raise TemporaryError(f"Tencent parse error for {code}: {e}")
+        return _tx_fetch(code)
 
     async def fetch_stock_info(self, code: str) -> dict:
         q = await self.fetch_realtime(code)
