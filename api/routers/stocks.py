@@ -105,9 +105,9 @@ async def get_stock_quote(code: str, fast: bool = False):
     if fast:
         demo = get_demo_realtime(code)
         return QuoteItem(**demo, updated_at=None)
-    market = get_router().detect_market(code)
     try:
-        q = await get_router().fetch_realtime(code, market)
+        from core.fetchers.tencent_fetcher import _tx_fetch
+        q = _tx_fetch(code)
         return QuoteItem(**q, updated_at=None)
     except Exception:
         demo = get_demo_realtime(code)
