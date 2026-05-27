@@ -108,10 +108,15 @@ class TencentFetcher(BaseFetcher):
             rows = data.get('data', {}).get(sym, {}).get('qfqday') or data.get('data', {}).get(sym, {}).get('day', [])
             if not rows:
                 raise TemporaryError(f'No kline for {code}')
-            df = pd.DataFrame(rows, columns=['date','open','close','high','low','volume','_','__','___','____','_____','______','_______','________'][:len(rows[0])])
+            df = pd.DataFrame(rows)
+            ncols = len(rows[0]) if rows else 0
+            col_names = {0:'date',1:'open',2:'close',3:'high',4:'low',5:'volume'}
+            df = df.rename(columns={i:col_names.get(i,f'c{i}') for i in range(ncols)})
             for col in ['open','high','low','close','volume']:
-                df[col] = pd.to_numeric(df[col], errors='coerce')
-            df['date'] = pd.to_datetime(df['date']).dt.date
+                if col in df.columns:
+                    df[col] = pd.to_numeric(df[col], errors='coerce')
+            if 'date' in df.columns:
+                df['date'] = pd.to_datetime(df['date']).dt.date
             df['amount'] = 0.0
             df['turnover_rate'] = 0.0
             return df[['date','open','high','low','close','volume','amount','turnover_rate']]

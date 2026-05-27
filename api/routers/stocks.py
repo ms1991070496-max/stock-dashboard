@@ -28,14 +28,6 @@ def _real_info(code: str) -> dict:
     return {'code': code, 'name': q['name'], 'market': _detect_mkt(_to_tx(code)), 'sector': '', 'industry': ''}
 
 
-def _real_kline(code: str, days: int):
-    import asyncio as aio
-    from core.fetchers.tencent_fetcher import TencentFetcher
-    tx = TencentFetcher()
-    start = date.today() - timedelta(days=days)
-    return aio.run(tx.fetch_kline(code, start_date=start))
-
-
 @router_api.get("/batch")
 async def batch_quote(codes: str = ""):
     code_list = [c.strip() for c in codes.split(",") if c.strip()]
@@ -72,7 +64,10 @@ async def get_stock_info(code: str):
 
 @router_api.get("/{code}/kline", response_model=list[KLineItem])
 async def get_stock_kline(code: str, days: int = Query(default=365, ge=1, le=3650)):
-    df = _real_kline(code, days)
+    from core.fetchers.tencent_fetcher import TencentFetcher
+    tx = TencentFetcher()
+    start = date.today() - timedelta(days=days)
+    df = await tx.fetch_kline(code, start_date=start)
     records = df.to_dict("records")
     for r in records:
         r["date"] = r["date"] if isinstance(r["date"], date) else str(r["date"])[:10]
