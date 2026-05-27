@@ -65,8 +65,8 @@ class TencentFetcher(BaseFetcher):
         import subprocess
         try:
             r = subprocess.run(['curl', '-s', '-H', 'User-Agent: Mozilla/5.0',
-                f'https://qt.gtimg.cn/q={sym}'], capture_output=True, text=True, timeout=8)
-            raw = r.stdout
+                f'https://qt.gtimg.cn/q={sym}'], capture_output=True, timeout=8)
+            raw = r.stdout.decode('gbk', errors='replace')
         except Exception as e:
             raise TemporaryError(f"Tencent fetch failed for {code}: {e}")
         if not raw or len(raw) < 50:
