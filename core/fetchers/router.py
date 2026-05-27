@@ -11,17 +11,7 @@ logger = logging.getLogger(__name__)
 
 def _make_chain() -> dict[str, list[BaseFetcher]]:
     tx = TencentFetcher()
-    chain = {"cn": [tx], "us": [tx], "hk": [tx]}
-    try:
-        from core.fetchers.akshare_fetcher import AkShareFetcher
-        chain["cn"].append(AkShareFetcher())
-    except ImportError: pass
-    try:
-        from core.fetchers.yfinance_fetcher import YFinanceFetcher
-        chain["us"].append(YFinanceFetcher())
-        chain["hk"].append(YFinanceFetcher())
-    except ImportError: pass
-    return chain
+    return {"cn": [tx], "us": [tx], "hk": [tx]}
 
 FETCHER_CHAIN = _make_chain()
 

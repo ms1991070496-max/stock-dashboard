@@ -61,8 +61,15 @@ class TencentFetcher(BaseFetcher):
 
     async def fetch_realtime(self, code: str) -> dict:
         sym = _to_tx(code)
-        raw = _fetch_tx(sym)
-        if not raw:
+        # Direct fetch, no cache function
+        raw = None
+        try:
+            req = urllib.request.Request(f'https://qt.gtimg.cn/q={sym}', headers={'User-Agent': 'Mozilla/5.0'})
+            resp = urllib.request.urlopen(req, timeout=8)
+            raw = resp.read().decode('gbk', errors='replace')
+        except Exception as e:
+            raise TemporaryError(f"Tencent fetch failed for {code}: {e}")
+        if not raw or len(raw) < 50:
             raise TemporaryError(f"Tencent no data for {code}")
         try:
             body = raw.split('"')[1] if '"' in raw else raw
