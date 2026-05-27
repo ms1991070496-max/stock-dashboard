@@ -91,11 +91,12 @@ async def get_stock_kline(
     code: str,
     days: int = Query(default=365, ge=1, le=3650, description="数据天数"),
 ):
-    market = get_router().detect_market(code)
     start = date.today() - timedelta(days=days)
 
     try:
-        df = await get_router().fetch_kline(code, market, start_date=start)
+        from core.fetchers.tencent_fetcher import TencentFetcher
+        tx = TencentFetcher()
+        df = await tx.fetch_kline(code, start_date=start)
         if df is not None and not df.empty:
             records = df.to_dict("records")
             for r in records:

@@ -93,7 +93,30 @@ class TencentFetcher(BaseFetcher):
         return {'code': code, 'name': q['name'], 'market': _detect_mkt(_to_tx(code)), 'sector': '', 'industry': ''}
 
     async def fetch_kline(self, code: str, start_date=None, end_date=None) -> pd.DataFrame:
-        raise TemporaryError("K-line via Tencent not implemented")
+        import subprocess, json
+        sym = _to_tx(code)
+        days = 365
+        if start_date:
+            from datetime import date
+            days = (date.today() - start_date).days + 1
+        url = f'https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param={sym},day,,,{min(days,400)},qfq'
+        try:
+            r = subprocess.run(['curl', '-s', '-H', 'User-Agent: Mozilla/5.0', url],
+                             capture_output=True, timeout=15)
+            raw = r.stdout.decode('gbk', errors='replace')
+            data = json.loads(raw)
+            rows = data.get('data', {}).get(sym, {}).get('qfqday') or data.get('data', {}).get(sym, {}).get('day', [])
+            if not rows:
+                raise TemporaryError(f'No kline for {code}')
+            df = pd.DataFrame(rows, columns=['date','open','close','high','low','volume','_','__','___','____','_____','______','_______','________'][:len(rows[0])])
+            for col in ['open','high','low','close','volume']:
+                df[col] = pd.to_numeric(df[col], errors='coerce')
+            df['date'] = pd.to_datetime(df['date']).dt.date
+            df['amount'] = 0.0
+            df['turnover_rate'] = 0.0
+            return df[['date','open','high','low','close','volume','amount','turnover_rate']]
+        except Exception as e:
+            raise TemporaryError(f'Tencent kline failed: {e}')
 
     async def fetch_financials(self, code: str) -> pd.DataFrame:
         return pd.DataFrame()
