@@ -95,6 +95,9 @@ class TencentFetcher(BaseFetcher):
     async def fetch_kline(self, code: str, start_date=None, end_date=None) -> pd.DataFrame:
         import subprocess, json
         sym = _to_tx(code)
+        # US stocks need .OQ suffix for kline API
+        if sym.startswith('us') and not sym.endswith('.OQ'):
+            sym += '.OQ'
         days = 365
         if start_date:
             from datetime import date
