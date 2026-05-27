@@ -17,6 +17,7 @@ async def get_indicators(
     code: str,
     days: int = Query(default=365, ge=30, le=3650),
 ):
+    klines = None
     try:
         from core.fetchers.tencent_fetcher import TencentFetcher
         tx = TencentFetcher()
@@ -25,6 +26,8 @@ async def get_indicators(
         if df is not None and not df.empty:
             klines = df.to_dict("records")
     except Exception:
+        pass
+    if not klines:
         klines = get_demo_kline(code, days)
 
     indicators = compute_all(klines)
