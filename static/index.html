@@ -97,7 +97,7 @@ async function V(code){
     html+='</div></div>';
     // K-line table
     html+='<div style="max-height:350px;overflow:auto"><table><thead><tr><th>日期</th><th>开盘</th><th>最高</th><th>最低</th><th>收盘</th><th>成交量</th><th>涨跌</th></tr></thead><tbody>';
-    for(var i=Math.max(0,n-30);i<n;i++){var k=kl[i],prev=i>0?kl[i-1]:null,ch=prev?((k.close-prev.close)/prev.close*100):0;html+='<tr><td>'+k.date+'</td><td>'+F(k.open)+'</td><td>'+F(k.high)+'</td><td>'+F(k.low)+'</td><td>'+F(k.close)+'</td><td>'+(k.volume/10000).toFixed(0)+'万</td><td class="'+C(ch)+'">'+(ch?((ch>0?'+':'')+F(ch,2)+'%'):'—')+'</td></tr>'}
+    for(var i=n-1;i>=Math.max(0,n-30);i--){var k=kl[i],prev=i>0?kl[i-1]:null,ch=prev?((k.close-prev.close)/prev.close*100):0;html+='<tr><td>'+k.date+'</td><td>'+F(k.open)+'</td><td>'+F(k.high)+'</td><td>'+F(k.low)+'</td><td>'+F(k.close)+'</td><td>'+(k.volume/10000).toFixed(0)+'万</td><td class="'+C(ch)+'">'+(ch?((ch>0?'+':'')+F(ch,2)+'%'):'—')+'</td></tr>'}
     html+='</tbody></table></div>';
     document.getElementById('detail').innerHTML=html;
   }catch(e){document.getElementById('detail').innerHTML='<button class="back-btn" onclick="B()">← 返回</button><p style="color:#8b949e;text-align:center;padding:60px">加载失败</p>'}
