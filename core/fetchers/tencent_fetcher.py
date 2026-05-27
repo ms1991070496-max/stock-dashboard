@@ -61,12 +61,12 @@ class TencentFetcher(BaseFetcher):
 
     async def fetch_realtime(self, code: str) -> dict:
         sym = _to_tx(code)
-        # Direct fetch, no cache function
-        raw = None
+        # Use curl subprocess — 100% reliable
+        import subprocess
         try:
-            req = urllib.request.Request(f'https://qt.gtimg.cn/q={sym}', headers={'User-Agent': 'Mozilla/5.0'})
-            resp = urllib.request.urlopen(req, timeout=8)
-            raw = resp.read().decode('gbk', errors='replace')
+            r = subprocess.run(['curl', '-s', '-H', 'User-Agent: Mozilla/5.0',
+                f'https://qt.gtimg.cn/q={sym}'], capture_output=True, text=True, timeout=8)
+            raw = r.stdout
         except Exception as e:
             raise TemporaryError(f"Tencent fetch failed for {code}: {e}")
         if not raw or len(raw) < 50:
