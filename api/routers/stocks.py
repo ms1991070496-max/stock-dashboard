@@ -23,25 +23,23 @@ logger = logging.getLogger(__name__)
 router_api = APIRouter(prefix="/api/v1/stocks", tags=["stocks"])
 
 
+def _real_quote(code: str) -> dict:
+    """Get real quote via Tencent Finance."""
+    try:
+        from core.fetchers.tencent_fetcher import _tx_fetch
+        return _tx_fetch(code)
+    except Exception:
+        return get_demo_realtime(code)
+
+
 @router_api.get("/batch")
 async def batch_quote(codes: str = "", fast: bool = True):
-    """Return multiple quotes in one request. ?codes=600519,AAPL,1810&fast=true"""
     code_list = [c.strip() for c in codes.split(",") if c.strip()]
     if not code_list:
         return {}
     results = {}
-    if fast:
-        for code in code_list:
-            results[code] = get_demo_realtime(code)
-    else:
-        for code in code_list:
-            market = get_router().detect_market(code)
-            try:
-                q = await get_router().fetch_realtime(code, market)
-                results[code] = q
-                time.sleep(0.3)  # Rate limit for Sina
-            except Exception:
-                results[code] = get_demo_realtime(code)
+    for code in code_list:
+        results[code] = get_demo_realtime(code) if fast else _real_quote(code)
     return results
 
 
@@ -70,12 +68,22 @@ async def search_stocks(q: str = Query(..., min_length=1, description="股票名
 
 @router_api.get("/{code}/info", response_model=StockInfo)
 async def get_stock_info(code: str):
-    market = get_router().detect_market(code)
     try:
-        info = await get_router().fetch_stock_info(code, market)
-        return StockInfo(**info)
+        from core.fetchers.tencent_fetcher import _tx_fetch
+        q = _tx_fetch(code)
+        return StockInfo(code=code, name=q['name'], market=_detect_mkt(code), sector="", industry="")
     except Exception:
         return StockInfo(**get_demo_info(code))
+
+
+def _detect_mkt(code: str) -> str:
+    code = code.strip().upper()
+    if code.endswith((".SS", ".SZ")): return "cn"
+    if code.endswith(".HK"): return "hk"
+    if code.isdigit():
+        if len(code) == 6: return "cn"
+        if len(code) in (4, 5): return "hk"
+    return "us"
 
 
 @router_api.get("/{code}/kline", response_model=list[KLineItem])
@@ -103,15 +111,8 @@ async def get_stock_kline(
 @router_api.get("/{code}/quote", response_model=QuoteItem)
 async def get_stock_quote(code: str, fast: bool = False):
     if fast:
-        demo = get_demo_realtime(code)
-        return QuoteItem(**demo, updated_at=None)
-    try:
-        from core.fetchers.tencent_fetcher import _tx_fetch
-        q = _tx_fetch(code)
-        return QuoteItem(**q, updated_at=None)
-    except Exception:
-        demo = get_demo_realtime(code)
-        return QuoteItem(**demo, updated_at=None)
+        return QuoteItem(**get_demo_realtime(code), updated_at=None)
+    return QuoteItem(**_real_quote(code), updated_at=None)
 
 
 @router_api.get("/{code}/financials")
