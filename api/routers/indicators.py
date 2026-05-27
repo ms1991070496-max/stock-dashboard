@@ -17,18 +17,14 @@ async def get_indicators(
     code: str,
     days: int = Query(default=365, ge=30, le=3650),
 ):
-    market = get_router().detect_market(code)
-    klines = None
-
     try:
+        from core.fetchers.tencent_fetcher import TencentFetcher
+        tx = TencentFetcher()
         start = date.today() - timedelta(days=days)
-        df = await get_router().fetch_kline(code, market, start_date=start)
+        df = await tx.fetch_kline(code, start_date=start)
         if df is not None and not df.empty:
             klines = df.to_dict("records")
     except Exception:
-        pass
-
-    if not klines:
         klines = get_demo_kline(code, days)
 
     indicators = compute_all(klines)
