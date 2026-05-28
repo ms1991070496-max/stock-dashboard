@@ -205,10 +205,8 @@ async function chPeriod(code,days,btn){
   }catch(e){}
 }
 
-loadNews();
-init();
-var p=new URLSearchParams(window.location.search),initCode=p.get('code');
-if(initCode)setTimeout(function(){V(initCode)},500);
+var initCode=new URLSearchParams(window.location.search).get('code');
+if(initCode){V(initCode)}else{loadNews();init()}
 window.addEventListener('popstate',function(){var c=new URLSearchParams(window.location.search).get('code');if(c){V(c)}else{B()}});
 </script>
 </body>
