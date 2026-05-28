@@ -20,7 +20,7 @@ _MIN_INTERVAL = 0.25
 
 def _to_tx(code: str) -> str:
     code = code.strip().upper()
-    if re.match(r'^[A-Z]{1,5}$', code) and not code.startswith(('SH', 'SZ', 'HK')):
+    if re.match(r'^[A-Z]{1,5}$', code) and not code.startswith(('SH', 'SZ', 'HK', 'US')):
         return f'us{code}'
     if code.endswith('.HK'):
         return f'hk{code[:-3]}'
@@ -30,7 +30,12 @@ def _to_tx(code: str) -> str:
     if code.startswith('SZ'): return f'sz{code[2:]}'
     if code.isdigit() and len(code) == 6:
         return ('sh' if code.startswith(('6','9')) else 'sz') + code
-    return code
+    # Convert SH/SZ/HK prefix to lowercase; keep US as-is
+    if code.startswith(('SH','SZ','HK')):
+        return code[:2].lower() + code[2:]
+    if code.startswith('US'):
+        return 'us' + code[2:]
+    return code.lower()
 
 
 def _detect_mkt(sym: str) -> str:

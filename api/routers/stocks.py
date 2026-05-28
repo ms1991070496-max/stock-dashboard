@@ -44,13 +44,32 @@ async def batch_quote(codes: str = ""):
 
 @router_api.get("/search", response_model=list[StockInfo])
 async def search_stocks(q: str = Query(..., min_length=1)):
-    fetcher = get_router()
+    import subprocess, json, urllib.parse
     cache = get_cache()
     cache_key = f"search:{q}"
     cached = cache.get(cache_key)
     if cached:
         return cached
-    results = await fetcher.search_stocks(q)
+    results = []
+    try:
+        encoded = urllib.parse.quote(q)
+        r = subprocess.run(['curl', '-s',
+            f'https://smartbox.gtimg.cn/s3/?q={encoded}&t=all&format=json',
+            '-H', 'User-Agent: Mozilla/5.0'],
+            capture_output=True, timeout=5)
+        raw = r.stdout.decode('gbk', errors='replace')
+        data = json.loads(raw)
+        for item in data.get('data', [])[:10]:
+            parts = item.split('~')
+            if len(parts) >= 3:
+                mkt_code = parts[1]
+                name = parts[2]
+                market = 'us'
+                if mkt_code.startswith(('sh','sz')): market = 'cn'
+                elif mkt_code.startswith('hk'): market = 'hk'
+                results.append({'code': mkt_code, 'name': name, 'market': market})
+    except Exception:
+        pass
     if not results:
         results = search_demo(q)
     cache.set(cache_key, results, ttl=300)
