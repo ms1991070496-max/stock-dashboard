@@ -89,29 +89,30 @@ async function V(code){
   document.getElementById('home').classList.add('hidden');document.getElementById('detail').classList.remove('hidden');
   document.getElementById('detail').innerHTML='<p style="color:#8b949e;text-align:center;padding:60px">加载中...</p>';
   try{
-    var info=await A('/v1/stocks/'+code+'/info'),quote=await A('/v1/stocks/'+code+'/quote'),ind=await A('/v1/indicators/'+code+'?days=365');
-    var m=info.market,mm=M[m]||M.us,c=quote.change_pct||0,kl=ind.klines,n=kl.length,last=kl[n-1];
+    var info=await A('/v1/stocks/'+code+'/info'),quote=await A('/v1/stocks/'+code+'/quote');
+    document.getElementById('detail').innerHTML='<button class="back-btn" onclick="B()">← 返回大盘</button><div class="detail-info"><h2>'+M[info.market].f+' '+info.name+'</h2><div class="meta">'+code+'</div><div class="big-price">'+M[info.market].c+F(quote.price)+' <span class="'+C(quote.change_pct||0)+'" style="font-size:16px">'+(quote.change_pct>0?'+':'')+F(quote.change_pct,2)+'%</span></div><div class="metrics">'+[['开盘',F(quote.open)],['昨收',F(quote.pre_close)],['最高',F(quote.high)],['最低',F(quote.low)],['成交量',(quote.volume/10000).toFixed(0)+'万']].map(function(mt){return'<div class="metric"><div class="lbl">'+mt[0]+'</div><div class="val">'+mt[1]+'</div></div>'}).join('')+'</div></div><div style="text-align:center;padding:40px;color:#8b949e"><span class="spinner"></span> K线数据加载中...</div>';
+    document.getElementById('detail').classList.remove('hidden');
+    document.getElementById('home').classList.add('hidden');
+    var ind=await A('/v1/indicators/'+code+'?days=365');
+    var m=info.market,c=quote.change_pct||0,kl=ind.klines,n=kl.length;
     var rsi=ind.rsi14?ind.rsi14[n-1]:null,kv=ind.kdj_k?ind.kdj_k[n-1]:null,dv=ind.kdj_d?ind.kdj_d[n-1]:null;
-    var html='<button class="back-btn" onclick="B()">← 返回大盘</button>';
-    html+='<div class="detail-info"><h2>'+mm.f+' '+info.name+'</h2><div class="meta">'+code+'</div>';
-    html+='<div class="big-price">'+mm.c+F(quote.price)+' <span class="'+C(c)+'" style="font-size:16px">'+(c>0?'+':'')+F(c,2)+'%</span></div>';
-    html+='<div class="metrics">';
-    var metrics=[['开盘',F(quote.open)],['昨收',F(quote.pre_close)],['最高',F(quote.high)],['最低',F(quote.low)],['成交量',(quote.volume/10000).toFixed(0)+'万'],['RSI(14)',rsi!=null?F(rsi,1):'—',rsi>70?'超买':rsi<30?'超卖':''],['KDJ-K',kv!=null?F(kv,1):'—'],['KDJ-D',dv!=null?F(dv,1):'—']];
-    for(var i=0;i<metrics.length;i++){var mt=metrics[i];html+='<div class="metric"><div class="lbl">'+mt[0]+'</div><div class="val">'+mt[1]+'</div>'+(mt[2]?'<div class="lbl '+(mt[2]==='超买'?'red':'green')+'">'+mt[2]+'</div>':'')+'</div>'}
-    html+='</div></div>';
-    html+='<div style="margin:8px 0"><span style="font-size:11px;color:#8b949e;margin-right:8px">时间范围:</span>';
-    html+='<button class="period-btn active" onclick="chPeriod(\''+code+'\',30,this)">1月</button>';
-    html+='<button class="period-btn" onclick="chPeriod(\''+code+'\',90,this)">3月</button>';
-    html+='<button class="period-btn" onclick="chPeriod(\''+code+'\',180,this)">半年</button>';
-    html+='<button class="period-btn" onclick="chPeriod(\''+code+'\',365,this)">1年</button>';
-    html+='</div>';
-    html+='<div class="chart-box"><div class="chart-title" style="font-size:12px;color:#8b949e;padding:8px 14px 0">K线图</div><canvas id="klineCanvas" style="width:100%;height:380px"></canvas></div>';
-    html+='<div class="chart-box"><div class="chart-title" style="font-size:12px;color:#8b949e;padding:8px 14px 0">成交量</div><canvas id="volCanvas" style="width:100%;height:100px"></canvas></div>';
-    // Real K-line table from Tencent
-    html+='<div style="max-height:350px;overflow:auto"><table><thead><tr><th>日期</th><th>开盘</th><th>最高</th><th>最低</th><th>收盘</th><th>成交量</th><th>涨跌</th></tr></thead><tbody>';
-    for(var i=n-1;i>=Math.max(0,n-30);i--){var k=kl[i],prev=i>0?kl[i-1]:null,ch=prev?((k.close-prev.close)/prev.close*100):0;html+='<tr><td>'+k.date+'</td><td>'+F(k.open)+'</td><td>'+F(k.high)+'</td><td>'+F(k.low)+'</td><td>'+F(k.close)+'</td><td>'+(k.volume/10000).toFixed(0)+'万</td><td class="'+C(ch)+'">'+(ch?((ch>0?'+':'')+F(ch,2)+'%'):'—')+'</td></tr>'}
-    html+='</tbody></table></div>';
-    document.getElementById('detail').innerHTML=html;
+    // Replace spinner with full detail
+    var more='<div class="metrics" style="margin-top:8px">';
+    more+=['RSI(14)',rsi!=null?F(rsi,1):'—',rsi>70?'超买':rsi<30?'超卖':''].map(function(mt){return'<div class="metric"><div class="lbl">'+mt[0]+'</div><div class="val">'+mt[1]+'</div>'+(mt[2]?'<div class="lbl '+(mt[2]==='超买'?'red':'green')+'">'+mt[2]+'</div>':'')+'</div>'}).join('');
+    more+='<div class="metric"><div class="lbl">KDJ-K</div><div class="val">'+(kv!=null?F(kv,1):'—')+'</div></div>';
+    more+='<div class="metric"><div class="lbl">KDJ-D</div><div class="val">'+(dv!=null?F(dv,1):'—')+'</div></div>';
+    more+='</div>';
+    more+='<div style="margin:8px 0"><span style="font-size:11px;color:#8b949e;margin-right:8px">时间范围:</span>';
+    more+='<button class="period-btn active" onclick="chPeriod(\''+code+'\',30,this)">1月</button>';
+    more+='<button class="period-btn" onclick="chPeriod(\''+code+'\',90,this)">3月</button>';
+    more+='<button class="period-btn" onclick="chPeriod(\''+code+'\',180,this)">半年</button>';
+    more+='<button class="period-btn" onclick="chPeriod(\''+code+'\',365,this)">1年</button></div>';
+    more+='<div class="chart-box"><div style="font-size:12px;color:#8b949e;padding:8px 14px 0">K线图</div><canvas id="klineCanvas" style="width:100%;height:380px"></canvas></div>';
+    more+='<div class="chart-box"><div style="font-size:12px;color:#8b949e;padding:8px 14px 0">成交量</div><canvas id="volCanvas" style="width:100%;height:100px"></canvas></div>';
+    more+='<div style="max-height:350px;overflow:auto"><table><thead><tr><th>日期</th><th>开盘</th><th>最高</th><th>最低</th><th>收盘</th><th>成交量</th><th>涨跌</th></tr></thead><tbody>';
+    for(var i=n-1;i>=Math.max(0,n-30);i--){var k=kl[i],prev=i>0?kl[i-1]:null,ch=prev?((k.close-prev.close)/prev.close*100):0;more+='<tr><td>'+k.date+'</td><td>'+F(k.open)+'</td><td>'+F(k.high)+'</td><td>'+F(k.low)+'</td><td>'+F(k.close)+'</td><td>'+(k.volume/10000).toFixed(0)+'万</td><td class="'+C(ch)+'">'+(ch?((ch>0?'+':'')+F(ch,2)+'%'):'—')+'</td></tr>'}
+    more+='</tbody></table></div>';
+    document.getElementById('detail').insertAdjacentHTML('beforeend',more);
     history.pushState(null,'','/?code='+code);
     setTimeout(function(){drawCanvas(kl)},100);
   }catch(e){document.getElementById('detail').innerHTML='<button class="back-btn" onclick="B()">← 返回</button><p style="color:#8b949e;text-align:center;padding:60px">加载失败</p>'}
