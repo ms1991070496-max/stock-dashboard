@@ -110,7 +110,7 @@ async function V(code){
 
 async function loadNews(){
   try{
-    var news=await A('/v1/news?limit=12');
+    var news=await A('/v1/news/?limit=12');
     var html='';
     for(var i=0;i<news.length;i++){
       var n=news[i],s=n.sentiment_score,emoji=s>0.05?'📈':s<-0.05?'📉':'➖',cl=s>0.05?'green':s<-0.05?'red':'';
