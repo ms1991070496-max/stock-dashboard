@@ -97,6 +97,12 @@ async function V(code){
     var metrics=[['开盘',F(quote.open)],['昨收',F(quote.pre_close)],['最高',F(quote.high)],['最低',F(quote.low)],['成交量',(quote.volume/10000).toFixed(0)+'万'],['RSI(14)',rsi!=null?F(rsi,1):'—',rsi>70?'超买':rsi<30?'超卖':''],['KDJ-K',kv!=null?F(kv,1):'—'],['KDJ-D',dv!=null?F(dv,1):'—']];
     for(var i=0;i<metrics.length;i++){var mt=metrics[i];html+='<div class="metric"><div class="lbl">'+mt[0]+'</div><div class="val">'+mt[1]+'</div>'+(mt[2]?'<div class="lbl '+(mt[2]==='超买'?'red':'green')+'">'+mt[2]+'</div>':'')+'</div>'}
     html+='</div></div>';
+    html+='<div style="margin:8px 0"><span style="font-size:11px;color:#8b949e;margin-right:8px">时间范围:</span>';
+    html+='<button class="period-btn active" onclick="chPeriod(\''+code+'\',30,this)">1月</button>';
+    html+='<button class="period-btn" onclick="chPeriod(\''+code+'\',90,this)">3月</button>';
+    html+='<button class="period-btn" onclick="chPeriod(\''+code+'\',180,this)">半年</button>';
+    html+='<button class="period-btn" onclick="chPeriod(\''+code+'\',365,this)">1年</button>';
+    html+='</div>';
     html+='<div class="chart-box"><div class="chart-title" style="font-size:12px;color:#8b949e;padding:8px 14px 0">K线图</div><canvas id="klineCanvas" style="width:100%;height:380px"></canvas></div>';
     html+='<div class="chart-box"><div class="chart-title" style="font-size:12px;color:#8b949e;padding:8px 14px 0">成交量</div><canvas id="volCanvas" style="width:100%;height:100px"></canvas></div>';
     // Real K-line table from Tencent
