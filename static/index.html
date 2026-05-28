@@ -49,7 +49,7 @@ th{color:#8b949e;font-weight:400;font-size:10px}td:first-child,th:first-child{te
 <script>
 var M={cn:{f:'🇨🇳',c:'¥'},us:{f:'🇺🇸',c:'$'},hk:{f:'🇭🇰',c:'HK$'}};
 var DEF=['600519','300750','002594','AAPL','NVDA','0700','1810','3690'];
-var IDX={上证指数:'000001',深证成指:'399001',创业板指:'399006',恒生指数:'HSI',纳斯达克:'^IXIC',标普500:'^GSPC'};
+var IDX={上证指数:'sh000001',深证成指:'sz399001',创业板指:'sz399006',恒生指数:'hkHSI',纳斯达克:'usIXIC',标普500:'usINX'};
 function F(n,d){d=d||2;return Number(n).toFixed(d)}function C(c){return c>0?'red':c<0?'green':''}
 async function A(p){var r=await fetch('/api'+p);if(!r.ok)throw Error(r.status);return r.json()}
 
