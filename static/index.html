@@ -112,6 +112,7 @@ async function V(code){
     for(var i=n-1;i>=Math.max(0,n-30);i--){var k=kl[i],prev=i>0?kl[i-1]:null,ch=prev?((k.close-prev.close)/prev.close*100):0;html+='<tr><td>'+k.date+'</td><td>'+F(k.open)+'</td><td>'+F(k.high)+'</td><td>'+F(k.low)+'</td><td>'+F(k.close)+'</td><td>'+(k.volume/10000).toFixed(0)+'万</td><td class="'+C(ch)+'">'+(ch?((ch>0?'+':'')+F(ch,2)+'%'):'—')+'</td></tr>'}
     html+='</tbody></table></div>';
     document.getElementById('detail').innerHTML=html;
+    history.pushState(null,'','/?code='+code);
     setTimeout(function(){drawCanvas(kl)},100);
   }catch(e){document.getElementById('detail').innerHTML='<button class="back-btn" onclick="B()">← 返回</button><p style="color:#8b949e;text-align:center;padding:60px">加载失败</p>'}
 }
@@ -128,7 +129,7 @@ async function loadNews(){
   }catch(e){}
 }
 
-function B(){document.getElementById('home').classList.remove('hidden');document.getElementById('detail').classList.add('hidden')}
+function B(){document.getElementById('home').classList.remove('hidden');document.getElementById('detail').classList.add('hidden');history.pushState(null,'','/')}
 
 function drawCanvas(kl){
   var W=document.getElementById('klineCanvas').parentElement.clientWidth-30;
@@ -206,6 +207,9 @@ async function chPeriod(code,days,btn){
 
 loadNews();
 init();
+var p=new URLSearchParams(window.location.search),initCode=p.get('code');
+if(initCode)setTimeout(function(){V(initCode)},500);
+window.addEventListener('popstate',function(){var c=new URLSearchParams(window.location.search).get('code');if(c){V(c)}else{B()}});
 </script>
 </body>
 </html>
