@@ -37,7 +37,7 @@ th{color:#8b949e;font-weight:400;font-size:10px}td:first-child,th:first-child{te
 <div class="container">
   <div id="home">
     <h1>📈 股票分析看板</h1>
-    <p class="sub">A股·美股·港股 | 新浪财经实时数据 | 阿里云 ECS 国内部署</p>
+    <p class="sub">A股·美股·港股 | 腾讯财经实时数据 | 阿里云 ECS 国内部署</p>
     <div class="idx-bar" id="idxBar"></div>
     <div class="search-bar"><input id="q" placeholder="搜索 — 茅台 / AAPL / 腾讯 / 比亚迪 ..." onkeydown="if(event.key==='Enter')doSearch()"><button onclick="doSearch()">搜索</button></div>
     <div id="results" class="results"></div>
@@ -180,6 +180,20 @@ function drawCanvas(kl){
   var mx=0;for(var i=0;i<n;i++)if(kl[i].volume>mx)mx=kl[i].volume;
   var vr=90/mx;vctx.fillStyle='#0d1117';vctx.fillRect(pad.l,0,W-pad.l-pad.r,100);
   for(var i=0;i<n;i++){var x=pad.l+i*xr,h=kl[i].volume*vr;vctx.fillStyle=kl[i].close>=kl[i].open?'rgba(248,81,73,.4)':'rgba(63,185,80,.4)';vctx.fillRect(x-cw/2,100-h,Math.max(1,cw),h)}
+}
+
+var curCode='',curPeriod=365;
+async function chPeriod(code,days,btn){
+  document.querySelectorAll('.period-btn').forEach(function(b){b.classList.remove('active')});
+  btn.classList.add('active');curPeriod=days;
+  try{
+    var ind=await A('/v1/indicators/'+code+'?days='+days);
+    drawCanvas(ind.klines);
+    // Update table
+    var kl=ind.klines,n=kl.length,tbl='';
+    for(var i=n-1;i>=Math.max(0,n-30);i--){var k=kl[i],prev=i>0?kl[i-1]:null,ch=prev?((k.close-prev.close)/prev.close*100):0;tbl+='<tr><td>'+k.date+'</td><td>'+F(k.open)+'</td><td>'+F(k.high)+'</td><td>'+F(k.low)+'</td><td>'+F(k.close)+'</td><td>'+(k.volume/10000).toFixed(0)+'万</td><td class="'+C(ch)+'">'+(ch?((ch>0?'+':'')+F(ch,2)+'%'):'—')+'</td></tr>'}
+    var tb=document.querySelector('#detail table tbody');if(tb)tb.innerHTML=tbl;
+  }catch(e){}
 }
 
 loadNews();

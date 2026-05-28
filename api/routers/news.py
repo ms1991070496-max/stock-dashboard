@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Query
 
 DEMO_NEWS = [
-    {"title": "央行宣布降准0.5个百分点，释放长期流动性约1万亿", "source": "中国人民银行", "published_at": "2026-05-28", "sentiment_score": 0.42},
+    {"title": "央行宣布降准0.5个百分点，释放长期流动性约1万亿", "source": "央行", "published_at": "2026-05-28", "sentiment_score": 0.42},
     {"title": "A股三大指数集体收涨，成交额突破1.5万亿", "source": "证券时报", "published_at": "2026-05-28", "sentiment_score": 0.35},
     {"title": "英伟达发布新一代AI芯片Blackwell Ultra，算力提升4倍", "source": "路透社", "published_at": "2026-05-27", "sentiment_score": 0.38},
     {"title": "美联储维持利率不变，暗示年内降息可能", "source": "华尔街见闻", "published_at": "2026-05-27", "sentiment_score": 0.15},
