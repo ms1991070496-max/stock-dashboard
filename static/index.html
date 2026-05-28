@@ -21,6 +21,7 @@ h1{font-size:22px;font-weight:700}.sub{color:#8b949e;font-size:12px;margin:4px 0
 .red{color:#f85149}.green{color:#3fb950}
 .section-title{font-size:12px;color:#8b949e;margin-bottom:6px;display:flex;justify-content:space-between}
 .period-btn{padding:5px 14px;border:1px solid #30363d;border-radius:6px;background:#161b22;color:#8b949e;cursor:pointer;font-size:11px;transition:all .15s;margin-right:4px}.period-btn:hover{border-color:#58a6ff;color:#c9d1d9}.period-btn.active{background:#1f6feb;border-color:#1f6feb;color:#fff;box-shadow:0 0 8px rgba(31,111,235,.3)}
+.screener-btn{padding:3px 10px;border:1px solid #30363d;border-radius:14px;background:transparent;color:#8b949e;cursor:pointer;font-size:10px;transition:all .15s}.screener-btn:hover{border-color:#58a6ff;color:#c9d1d9}.screener-btn.active{background:#1f6feb;border-color:#1f6feb;color:#fff}
 .stock-hdr{margin-bottom:14px}.stock-hdr h2{font-size:18px}.stock-hdr .meta{font-size:11px;color:#8b949e;margin:2px 0}.stock-hdr .big-price{font-size:26px;font-weight:700;margin-top:4px}
 .hidden{display:none!important}
 .back-btn{color:#58a6ff;cursor:pointer;font-size:13px;background:none;border:none;margin-bottom:12px}
@@ -43,7 +44,7 @@ th{color:#8b949e;font-weight:400;font-size:10px}td:first-child,th:first-child{te
     <div class="idx-bar" id="idxBar"></div>
     <div class="search-bar"><input id="q" placeholder="搜索 — 茅台 / AAPL / 腾讯 / 比亚迪 ..." onkeydown="if(event.key==='Enter')doSearch()"><button onclick="doSearch()">搜索</button></div>
     <div id="results" class="results"></div>
-    <div class="section-title"><span>市场快照</span><span id="st" style="font-size:10px;color:#484f58"></span></div>
+    <div class="section-title"><span>市场快照</span><span style="font-size:10px;color:#484f58"><button class="screener-btn active" onclick="filterStocks('all',this)">全部</button><button class="screener-btn" onclick="filterStocks('up',this)">📈 上涨</button><button class="screener-btn" onclick="filterStocks('down',this)">📉 下跌</button><button class="screener-btn" onclick="filterStocks('top',this)">🔥 涨幅最大</button><span id="st" style="margin-left:8px"></span></span></div>
     <div class="snapshot" id="snap"></div>
     <div class="section-title" style="margin-top:20px">📰 市场情绪</div>
     <div id="newsPanel" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(350px,1fr));gap:6px;margin-bottom:16px"></div>
@@ -74,7 +75,7 @@ async function init(){
 
 function renderAll(data){
   for(var k in IDX){var d=data[IDX[k]];if(!d)continue;var c=d.change_pct||0;var el=document.getElementById('i_'+IDX[k]);if(el)el.innerHTML='<div class="n">'+k+'</div><div class="p">'+F(d.price,2)+'</div><div class="c '+C(c)+'">'+(c>0?'+':'')+F(c,2)+'%</div>'}
-  var html='',n=0;for(var i=0;i<DEF.length;i++){var q=data[DEF[i]],code=DEF[i];if(q){var m=code.match(/^\d{6}$/)?'cn':/^\d{4,5}$/.test(code)?'hk':'us',c=q.change_pct||0;html+='<div class="card" onclick="V(\''+code+'\')"><div class="nm">'+M[m].f+' '+q.name+'</div><div class="pr">'+M[m].c+F(q.price)+'</div><div class="ch '+C(c)+'">'+(c>0?'+':'')+F(c,2)+'%</div></div>';n++}}
+  var html='',n=0;for(var i=0;i<DEF.length;i++){var q=data[DEF[i]],code=DEF[i];if(q){stockData[code]=q;var m=code.match(/^\d{6}$/)?'cn':/^\d{4,5}$/.test(code)?'hk':'us',c=q.change_pct||0;html+='<div class="card" onclick="V(\''+code+'\')"><div class="nm">'+M[m].f+' '+q.name+'</div><div class="pr">'+M[m].c+F(q.price)+'</div><div class="ch '+C(c)+'">'+(c>0?'+':'')+F(c,2)+'%</div></div>';n++}}
   document.getElementById('snap').innerHTML=html;document.getElementById('st').textContent='('+n+'/'+DEF.length+')';
 }
 
@@ -128,6 +129,21 @@ async function loadNews(){
     }
     document.getElementById('newsPanel').innerHTML=html;
   }catch(e){}
+}
+
+var stockData={};
+function filterStocks(type,btn){
+  document.querySelectorAll('.screener-btn').forEach(function(b){b.classList.remove('active')});
+  btn.classList.add('active');
+  var el=document.getElementById('snap'),codes=Object.keys(stockData),n=0;
+  if(type==='all'){codes=DEF;}
+  else if(type==='up'){codes=codes.filter(function(c){return stockData[c].change_pct>0})}
+  else if(type==='down'){codes=codes.filter(function(c){return stockData[c].change_pct<0})}
+  else if(type==='top'){codes.sort(function(a,b){return Math.abs(stockData[b].change_pct)-Math.abs(stockData[a].change_pct)})}
+  var html='';for(var i=0;i<codes.length;i++){var q=stockData[codes[i]],code=codes[i];if(!q)continue;
+    var m=code.match(/^\d{6}$/)?'cn':/^\d{4,5}$/.test(code)?'hk':'us',c=q.change_pct||0;
+    html+='<div class="card" onclick="V(\''+code+'\')"><div class="nm">'+M[m].f+' '+q.name+'</div><div class="pr">'+M[m].c+F(q.price)+'</div><div class="ch '+C(c)+'">'+(c>0?'+':'')+F(c,2)+'%</div></div>';n++}
+  el.innerHTML=html;document.getElementById('st').textContent='('+n+')';
 }
 
 function B(){document.getElementById('home').classList.remove('hidden');document.getElementById('detail').classList.add('hidden');history.pushState(null,'','/')}
